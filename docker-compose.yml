@@ -1,0 +1,11 @@
+services:
+  teleprompter-app:
+    build: .
+    container_name: teleprompter-app
+    restart: unless-stopped
+    networks:
+      - proxy-network
+
+networks:
+  proxy-network:
+    external: true
