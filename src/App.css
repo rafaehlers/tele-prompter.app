@@ -241,6 +241,16 @@
   cursor: not-allowed;
 }
 
+.lang-select {
+  background: #222530;
+  color: #f5f5f5;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 7px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
 .btn.danger {
   border-color: #ff5555;
   color: #ff6b6b;

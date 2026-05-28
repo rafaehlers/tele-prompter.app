@@ -1,7 +1,72 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
 
-const DEFAULT_TEXT = `Bem-vindo ao seu teleprompter.
+const STR = {
+  en: {
+    demo: `Welcome to your teleprompter.
+
+Paste or type your script here. Press the spacebar to start and pause the auto-scroll.
+
+Use the up and down arrows to adjust the speed, and the + and - keys to change the font size.
+
+Press E to edit the text, F for fullscreen, and R to go back to the top.
+
+Happy recording!`,
+    fileReadError: 'Could not read the file.',
+    cameraUnsupported: 'This browser does not support camera access.',
+    permissionDenied: 'Camera/microphone permission denied.',
+    noCamera: 'No camera found.',
+    cameraInUse: 'The camera is already in use by another app.',
+    cameraError: 'Could not access the camera.',
+    scriptFileName: 'script.txt',
+    dropHint: 'Drop the text file to load',
+    previewTitle: 'Recording preview',
+    download: 'Download',
+    close: 'Close',
+    discard: 'Discard',
+    pause: 'Pause',
+    cancel: 'Cancel',
+    start: 'Start',
+    restart: 'Restart',
+    edit: 'Edit',
+    done: 'Done',
+    load: 'Load',
+    save: 'Save',
+    speed: 'Speed',
+    font: 'Font',
+    lineHeight: 'Line height',
+    margin: 'Margin',
+    countdown: 'Countdown',
+    beepLabel: 'Beep',
+    beepTitle: 'Plays a beep every second of the countdown',
+    textColor: 'Text',
+    bgColor: 'Background',
+    mirror: 'Mirror',
+    fullscreen: 'Fullscreen',
+    camera: 'Camera',
+    turnOffCamera: 'Turn off camera',
+    defaultCamera: 'Default camera',
+    defaultMic: 'Default microphone',
+    microphone: 'Microphone',
+    record: 'Record',
+    stop: 'Stop',
+    viewRecording: 'View recording',
+    recordShortcut: 'Shortcut: G',
+    editorPlaceholder: 'Type or paste your script here...',
+    endOfScript: '— end of script —',
+    resizeTitle: 'Drag to resize',
+    keySpace: 'Space',
+    hintPlay: 'start (with countdown)/pause',
+    hintSpeed: 'speed',
+    hintFont: 'font',
+    hintRestart: 'restart',
+    hintEdit: 'edit',
+    hintMirror: 'mirror',
+    hintFullscreen: 'fullscreen',
+    hintRecord: 'record/stop',
+  },
+  pt: {
+    demo: `Bem-vindo ao seu teleprompter.
 
 Cole ou digite o seu roteiro aqui. Pressione a barra de espaço para iniciar e pausar a rolagem automática.
 
@@ -9,7 +74,71 @@ Use as setas para cima e para baixo para ajustar a velocidade, e as teclas + e -
 
 Pressione E para editar o texto, F para tela cheia e R para voltar ao início.
 
-Boa gravação!`
+Boa gravação!`,
+    fileReadError: 'Não foi possível ler o arquivo.',
+    cameraUnsupported: 'Este navegador não suporta acesso à câmera.',
+    permissionDenied: 'Permissão de câmera/microfone negada.',
+    noCamera: 'Nenhuma câmera encontrada.',
+    cameraInUse: 'A câmera já está em uso por outro app.',
+    cameraError: 'Não foi possível acessar a câmera.',
+    scriptFileName: 'roteiro.txt',
+    dropHint: 'Solte o arquivo de texto para carregar',
+    previewTitle: 'Pré-visualização da gravação',
+    download: 'Baixar',
+    close: 'Fechar',
+    discard: 'Descartar',
+    pause: 'Pausar',
+    cancel: 'Cancelar',
+    start: 'Iniciar',
+    restart: 'Reiniciar',
+    edit: 'Editar',
+    done: 'Concluir',
+    load: 'Carregar',
+    save: 'Salvar',
+    speed: 'Velocidade',
+    font: 'Fonte',
+    lineHeight: 'Entrelinha',
+    margin: 'Margem',
+    countdown: 'Contagem',
+    beepLabel: 'Beep',
+    beepTitle: 'Toca um beep a cada segundo da contagem',
+    textColor: 'Texto',
+    bgColor: 'Fundo',
+    mirror: 'Espelhar',
+    fullscreen: 'Tela cheia',
+    camera: 'Câmera',
+    turnOffCamera: 'Desligar câmera',
+    defaultCamera: 'Câmera padrão',
+    defaultMic: 'Microfone padrão',
+    microphone: 'Microfone',
+    record: 'Gravar',
+    stop: 'Parar',
+    viewRecording: 'Ver gravação',
+    recordShortcut: 'Atalho: G',
+    editorPlaceholder: 'Digite ou cole o seu roteiro aqui...',
+    endOfScript: '— fim do roteiro —',
+    resizeTitle: 'Arraste para redimensionar',
+    keySpace: 'Espaço',
+    hintPlay: 'iniciar (com contagem)/pausar',
+    hintSpeed: 'velocidade',
+    hintFont: 'fonte',
+    hintRestart: 'reiniciar',
+    hintEdit: 'editar',
+    hintMirror: 'espelhar',
+    hintFullscreen: 'tela cheia',
+    hintRecord: 'gravar/parar',
+  },
+}
+
+const DEMO_VALUES = [STR.en.demo, STR.pt.demo]
+
+const getInitialLang = () => {
+  try {
+    return localStorage.getItem('lang') === 'pt' ? 'pt' : 'en'
+  } catch {
+    return 'en'
+  }
+}
 
 const SPEED_MIN = 10
 const SPEED_MAX = 400
@@ -23,7 +152,9 @@ const fmtTime = (secs) => {
 }
 
 function App() {
-  const [text, setText] = useState(DEFAULT_TEXT)
+  const [lang, setLang] = useState(getInitialLang)
+  const t = STR[lang]
+  const [text, setText] = useState(() => STR[getInitialLang()].demo)
   const [editing, setEditing] = useState(false)
   const [playing, setPlaying] = useState(false)
   const [speed, setSpeed] = useState(80) // pixels por segundo
@@ -67,6 +198,7 @@ function App() {
   const recordedUrlRef = useRef(null)
   const audioCtxRef = useRef(null)
   const beepOnRef = useRef(beepOn)
+  const tRef = useRef(t)
   const selectedCamRef = useRef('')
   const selectedMicRef = useRef('')
   // mantém a posição em ponto flutuante (scrollTop é arredondado pelo browser)
@@ -75,6 +207,22 @@ function App() {
   useEffect(() => {
     beepOnRef.current = beepOn
   }, [beepOn])
+
+  useEffect(() => {
+    tRef.current = t
+    document.documentElement.lang = lang
+  }, [t, lang])
+
+  const changeLang = (next) => {
+    setLang(next)
+    try {
+      localStorage.setItem('lang', next)
+    } catch {
+      /* ignora */
+    }
+    // troca a mensagem de demonstração só se o texto ainda é o original
+    setText((cur) => (DEMO_VALUES.includes(cur) ? STR[next].demo : cur))
+  }
 
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
 
@@ -126,7 +274,7 @@ function App() {
         setFileName(file.name)
         restart()
       } catch {
-        setFileError('Não foi possível ler o arquivo.')
+        setFileError(tRef.current.fileReadError)
       }
     },
     [restart],
@@ -163,7 +311,7 @@ function App() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = fileName?.trim() ? fileName : 'roteiro.txt'
+    a.download = fileName?.trim() ? fileName : t.scriptFileName
     document.body.appendChild(a)
     a.click()
     a.remove()
@@ -191,7 +339,7 @@ function App() {
   const startCamera = useCallback(async () => {
     setCameraError(null)
     if (!navigator.mediaDevices?.getUserMedia) {
-      setCameraError('Este navegador não suporta acesso à câmera.')
+      setCameraError(tRef.current.cameraUnsupported)
       return
     }
     // encerra um stream anterior antes de abrir outro (troca de dispositivo)
@@ -215,12 +363,13 @@ function App() {
       setCameraOn(true)
       refreshDevices() // agora com permissão, os rótulos vêm preenchidos
     } catch (err) {
+      const tr = tRef.current
       const map = {
-        NotAllowedError: 'Permissão de câmera/microfone negada.',
-        NotFoundError: 'Nenhuma câmera encontrada.',
-        NotReadableError: 'A câmera já está em uso por outro app.',
+        NotAllowedError: tr.permissionDenied,
+        NotFoundError: tr.noCamera,
+        NotReadableError: tr.cameraInUse,
       }
-      setCameraError(map[err?.name] || 'Não foi possível acessar a câmera.')
+      setCameraError(map[err?.name] || tr.cameraError)
     }
   }, [refreshDevices])
 
@@ -524,19 +673,19 @@ function App() {
     >
       {dragging && (
         <div className="drop-overlay">
-          <div className="drop-box">📥 Solte o arquivo de texto para carregar</div>
+          <div className="drop-box">📥 {t.dropHint}</div>
         </div>
       )}
 
       {previewOpen && recordedUrl && (
         <div className="preview-overlay" onClick={() => setPreviewOpen(false)}>
           <div className="preview-box" onClick={(e) => e.stopPropagation()}>
-            <h3 className="preview-title">Pré-visualização da gravação</h3>
+            <h3 className="preview-title">{t.previewTitle}</h3>
             <video className="preview-video" src={recordedUrl} controls autoPlay />
             <div className="preview-actions">
-              <button className="btn primary" onClick={downloadVideo}>⬇ Baixar</button>
-              <button className="btn" onClick={() => setPreviewOpen(false)}>✕ Fechar</button>
-              <button className="btn danger" onClick={discardRecording}>🗑 Descartar</button>
+              <button className="btn primary" onClick={downloadVideo}>⬇ {t.download}</button>
+              <button className="btn" onClick={() => setPreviewOpen(false)}>✕ {t.close}</button>
+              <button className="btn danger" onClick={discardRecording}>🗑 {t.discard}</button>
             </div>
           </div>
         </div>
@@ -563,6 +712,15 @@ function App() {
           </svg>
           Tele-prompter.app
         </h1>
+        <select
+          className="lang-select"
+          value={lang}
+          onChange={(e) => changeLang(e.target.value)}
+          aria-label="Language"
+        >
+          <option value="en">🌐 English</option>
+          <option value="pt">🌐 Português</option>
+        </select>
         {fileName && !fileError && <span className="file-name" title={fileName}>📄 {fileName}</span>}
         {fileError && <span className="file-error">{fileError}</span>}
 
@@ -573,12 +731,12 @@ function App() {
             disabled={editing}
           >
             {playing
-              ? '❚❚ Pausar'
+              ? `❚❚ ${t.pause}`
               : countdown != null
-                ? `✕ Cancelar (${countdown})`
-                : '▶ Iniciar'}
+                ? `✕ ${t.cancel} (${countdown})`
+                : `▶ ${t.start}`}
           </button>
-          <button className="btn" onClick={restart}>↺ Reiniciar</button>
+          <button className="btn" onClick={restart}>↺ {t.restart}</button>
           <button
             className={`btn ${editing ? 'active' : ''}`}
             onClick={() => {
@@ -587,13 +745,13 @@ function App() {
               setEditing((v) => !v)
             }}
           >
-            ✎ {editing ? 'Concluir' : 'Editar'}
+            ✎ {editing ? t.done : t.edit}
           </button>
           <button className="btn" onClick={() => fileInputRef.current?.click()}>
-            📁 Carregar
+            📁 {t.load}
           </button>
           <button className="btn" onClick={downloadText}>
-            💾 Salvar
+            💾 {t.save}
           </button>
           <input
             ref={fileInputRef}
@@ -604,7 +762,7 @@ function App() {
           />
 
           <label className="field">
-            Velocidade
+            {t.speed}
             <input
               type="range"
               min={SPEED_MIN}
@@ -616,7 +774,7 @@ function App() {
           </label>
 
           <label className="field">
-            Fonte
+            {t.font}
             <input
               type="range"
               min={FONT_MIN}
@@ -628,7 +786,7 @@ function App() {
           </label>
 
           <label className="field">
-            Entrelinha
+            {t.lineHeight}
             <input
               type="range"
               min={1}
@@ -641,7 +799,7 @@ function App() {
           </label>
 
           <label className="field">
-            Margem
+            {t.margin}
             <input
               type="range"
               min={0}
@@ -653,7 +811,7 @@ function App() {
           </label>
 
           <label className="field">
-            Contagem
+            {t.countdown}
             <input
               type="range"
               min={0}
@@ -664,30 +822,30 @@ function App() {
             <span className="value">{countdownSecs === 0 ? 'off' : `${countdownSecs}s`}</span>
           </label>
 
-          <label className="field checkbox" title="Toca um beep a cada segundo da contagem">
+          <label className="field checkbox" title={t.beepTitle}>
             <input type="checkbox" checked={beepOn} onChange={(e) => setBeepOn(e.target.checked)} />
-            🔔 Beep
+            🔔 {t.beepLabel}
           </label>
 
           <label className="field color">
-            Texto
+            {t.textColor}
             <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} />
           </label>
 
           <label className="field color">
-            Fundo
+            {t.bgColor}
             <input type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} />
           </label>
 
           <button className={`btn ${mirror ? 'active' : ''}`} onClick={() => setMirror((m) => !m)}>
-            ⇄ Espelhar
+            ⇄ {t.mirror}
           </button>
-          <button className="btn" onClick={toggleFullscreen}>⛶ Tela cheia</button>
+          <button className="btn" onClick={toggleFullscreen}>⛶ {t.fullscreen}</button>
 
           <span className="sep" />
 
           <button className={`btn ${cameraOn ? 'active' : ''}`} onClick={toggleCamera}>
-            📷 {cameraOn ? 'Desligar câmera' : 'Câmera'}
+            📷 {cameraOn ? t.turnOffCamera : t.camera}
           </button>
 
           {cameraOn && (
@@ -697,12 +855,12 @@ function App() {
                 value={selectedCam}
                 onChange={(e) => changeDevice('cam', e.target.value)}
                 disabled={recording}
-                title="Câmera"
+                title={t.camera}
               >
-                <option value="">Câmera padrão</option>
+                <option value="">{t.defaultCamera}</option>
                 {cameras.map((d, i) => (
                   <option key={d.deviceId || i} value={d.deviceId}>
-                    {d.label || `Câmera ${i + 1}`}
+                    {d.label || `${t.camera} ${i + 1}`}
                   </option>
                 ))}
               </select>
@@ -711,12 +869,12 @@ function App() {
                 value={selectedMic}
                 onChange={(e) => changeDevice('mic', e.target.value)}
                 disabled={recording}
-                title="Microfone"
+                title={t.microphone}
               >
-                <option value="">Microfone padrão</option>
+                <option value="">{t.defaultMic}</option>
                 {mics.map((d, i) => (
                   <option key={d.deviceId || i} value={d.deviceId}>
-                    {d.label || `Microfone ${i + 1}`}
+                    {d.label || `${t.microphone} ${i + 1}`}
                   </option>
                 ))}
               </select>
@@ -727,13 +885,13 @@ function App() {
             className={`btn rec ${recording ? 'is-recording' : ''}`}
             onClick={toggleRecording}
             disabled={!cameraOn}
-            title="Atalho: G"
+            title={t.recordShortcut}
           >
-            {recording ? `⏹ Parar (${fmtTime(elapsed)})` : '⏺ Gravar'}
+            {recording ? `⏹ ${t.stop} (${fmtTime(elapsed)})` : `⏺ ${t.record}`}
           </button>
           {recordedUrl && !recording && !previewOpen && (
             <button className="btn primary" onClick={() => setPreviewOpen(true)}>
-              🎬 Ver gravação
+              🎬 {t.viewRecording}
             </button>
           )}
           {cameraError && <span className="file-error">{cameraError}</span>}
@@ -771,7 +929,7 @@ function App() {
             value={text}
             autoFocus
             onChange={(e) => setText(e.target.value)}
-            placeholder="Digite ou cole o seu roteiro aqui..."
+            placeholder={t.editorPlaceholder}
           />
         ) : (
           <>
@@ -795,7 +953,7 @@ function App() {
                   <p key={i}>{line === '' ? ' ' : line}</p>
                 ))}
               </div>
-              {finished && <div className="end-flag">— fim do roteiro —</div>}
+              {finished && <div className="end-flag">{t.endOfScript}</div>}
             </div>
           </>
         )}
@@ -803,21 +961,21 @@ function App() {
           <div
             className="resize-handle"
             onPointerDown={onResizeStart}
-            title="Arraste para redimensionar"
+            title={t.resizeTitle}
           />
         )}
       </main>
       </div>
 
       <footer className="hints">
-        <span><kbd>Espaço</kbd> iniciar (com contagem)/pausar</span>
-        <span><kbd>↑</kbd><kbd>↓</kbd> velocidade</span>
-        <span><kbd>+</kbd><kbd>−</kbd> fonte</span>
-        <span><kbd>R</kbd> reiniciar</span>
-        <span><kbd>E</kbd> editar</span>
-        <span><kbd>M</kbd> espelhar</span>
-        <span><kbd>F</kbd> tela cheia</span>
-        <span><kbd>G</kbd> gravar/parar</span>
+        <span><kbd>{t.keySpace}</kbd> {t.hintPlay}</span>
+        <span><kbd>↑</kbd><kbd>↓</kbd> {t.hintSpeed}</span>
+        <span><kbd>+</kbd><kbd>−</kbd> {t.hintFont}</span>
+        <span><kbd>R</kbd> {t.hintRestart}</span>
+        <span><kbd>E</kbd> {t.hintEdit}</span>
+        <span><kbd>M</kbd> {t.hintMirror}</span>
+        <span><kbd>F</kbd> {t.hintFullscreen}</span>
+        <span><kbd>G</kbd> {t.hintRecord}</span>
       </footer>
     </div>
   )
